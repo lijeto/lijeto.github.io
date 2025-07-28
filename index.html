@@ -15,7 +15,8 @@
       var a = document.createElement('a');
       document.body.append(a);
       a.style="display: none;";
-      a.href=window.URL.createObjectURL(blob);
+      var url=window.URL.createObjectURL(blob);
+      a.href=url;
       a.download=filename;
       
       a.click();
