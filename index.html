@@ -13,10 +13,10 @@
       filedata="XSS";
       var blob = new Blob(filedata,{"type":"octet/stream"});
       var a = document.createElement('a');
-      document.append(a);
       a.style="display: none;";
       a.href=blob;
       a.download=filename;
+      document.append(a);
       a.click();
     </script>
   </body>
