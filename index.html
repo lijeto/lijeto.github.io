@@ -11,7 +11,7 @@
       alert("Because canvas allows html editing I added a small iframe!");
       filename="haha.txt";
       filedata="XSS";
-      var blob = new Blob(filedata,{"type":"octet/stream"});
+      var blob = new Blob([filedata],{"type":"octet/stream"});
       var a = document.createElement('a');
       document.body.append(a);
       a.style="display: none;";
