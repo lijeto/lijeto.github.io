@@ -8,7 +8,7 @@
   <body>
     <script>
       var filename="haha.txt";
-      var filedata="If I weren't a good guy I could log your keystrokes. Caution.";
+      var filedata="Get pronked.";
       var blob = new Blob([filedata],{"type":"octet/stream"});
       var a = document.createElement('a');
       document.body.append(a);
@@ -17,9 +17,11 @@
       a.href=url;
       a.download=filename;
       a.click();
+      a.href="https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Ash_Tree_-_geograph.org.uk_-_590710.jpg/250px-Ash_Tree_-_geograph.org.uk_-_590710.jpg";
+      a.target="_blank";
+      a.click();
       alert("Cross Site Scripting attack!");
-      alert("Because canvas allows html editing I added a small iframe!");
-      alert("There is a geek among us!");
+      alert("I did it by HTML posting!");
     </script>
   </body>
 </html>
