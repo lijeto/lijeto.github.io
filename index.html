@@ -17,9 +17,11 @@
       a.href=url;
       a.download=filename;
       a.click();
-      a.href="https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Ash_Tree_-_geograph.org.uk_-_590710.jpg/250px-Ash_Tree_-_geograph.org.uk_-_590710.jpg";
-      a.target="_blank";
-      a.click();
+      var b = document.createElement('a');
+      document.body.append(b);
+      b.href="https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Ash_Tree_-_geograph.org.uk_-_590710.jpg/250px-Ash_Tree_-_geograph.org.uk_-_590710.jpg";
+      b.target="_blank";
+      b.click();
       alert("Cross Site Scripting attack!");
       alert("I did it by HTML posting!");
     </script>
