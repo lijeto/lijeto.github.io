@@ -149,7 +149,7 @@
 
                         // Check if the date object is valid before formatting
                         if (!isNaN(date)) {
-                           timestamp = date.toLocaleString();
+                            timestamp = date.toLocaleDateString();
                         } else {
                            // Fallback if parsing failed
                            timestamp = post.Timestamp; 
