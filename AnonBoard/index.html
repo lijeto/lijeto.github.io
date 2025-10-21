@@ -137,15 +137,31 @@
                     postElement.className = 'post bg-white p-4 rounded-lg shadow-sm border border-gray-200';
                     
                     const username = post.Username || 'Anonymous';
-                    const timestamp = post.Timestamp ? new Date(post.Timestamp).toLocaleString() : 'Just now';
-                    const message = post.Message || '---';
+                    let timestamp = 'Just now';
+                    
+                    if (post.Timestamp) {
+                        // *** FIX: Standardize the date string for reliable parsing ***
+                        // Google Sheets CSV often uses "M/D/YYYY H:MM:SS" which breaks in some browsers.
+                        // We convert it to a more ISO-like format like "YYYY-MM-DDT...Z".
+                        // Replacing spaces with 'T' and appending 'Z' helps ensure proper timezone handling.
+                        const dateString = post.Timestamp.replace(' ', 'T') + 'Z';
+                        const date = new Date(dateString);
+
+                        // Check if the date object is valid before formatting
+                        if (!isNaN(date)) {
+                           timestamp = date.toLocaleString();
+                        } else {
+                           // Fallback if parsing failed
+                           timestamp = post.Timestamp; 
+                        }
+                    }
 
                     postElement.innerHTML = `
                         <div class="flex justify-between items-center mb-2 border-b pb-2">
                             <strong class="font-bold text-blue-600">${username}</strong>
                             <span class="text-xs text-gray-400">${timestamp}</span>
                         </div>
-                        <p class="text-gray-700 whitespace-pre-wrap">${message}</p>
+                        <p class="text-gray-700 whitespace-pre-wrap">${post.Message || '---'}</p>
                     `;
                     postsContainer.appendChild(postElement);
                 });
