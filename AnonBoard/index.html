@@ -96,12 +96,10 @@
                         post[header.trim()] = columns[index].trim(); 
                     });
                     
-                    // --- NEW CHECK: ENSURE THE MESSAGE IS NOT EMPTY ---
-                    // This prevents blank rows from the spreadsheet from being displayed.
+                    // --- CHECK: ENSURE THE MESSAGE IS NOT EMPTY ---
                     if (post.Message && post.Message.length > 0) {
                         posts.push(post);
                     }
-                    // --------------------------------------------------
                 }
             });
             // Return posts in reverse order (newest first)
@@ -140,16 +138,13 @@
                     let timestamp = 'Just now';
                     
                     if (post.Timestamp) {
-                        // *** FIX: Standardize the date string for reliable parsing ***
-                        // Google Sheets CSV often uses "M/D/YYYY H:MM:SS" which breaks in some browsers.
-                        // We convert it to a more ISO-like format like "YYYY-MM-DDT...Z".
-                        // Replacing spaces with 'T' and appending 'Z' helps ensure proper timezone handling.
+                        // Standardize the date string for reliable parsing
                         const dateString = post.Timestamp.replace(' ', 'T') + 'Z';
                         const date = new Date(dateString);
 
-                        // Check if the date object is valid before formatting
                         if (!isNaN(date)) {
-                            timestamp = date.toLocaleDateString();
+                           // Show only the date
+                           timestamp = date.toLocaleDateString();
                         } else {
                            // Fallback if parsing failed
                            timestamp = post.Timestamp; 
@@ -199,11 +194,14 @@
 
                 if (data.result === 'success') {
                     statusMessage.className = 'mt-3 text-sm text-center text-green-600 font-medium';
-                    statusMessage.textContent = '✅ Post published! Refreshing posts...';
+                    // We inform the user we are waiting for the published sheet to update
+                    statusMessage.textContent = '✅ Post published! Waiting for Google Sheets update...'; 
                     form.reset();
                     
-                    // Immediately re-fetch and display posts
-                    setTimeout(fetchAndDisplayPosts, 1000); 
+                    // *** CHANGED: Increased delay to 3 seconds (3000ms) ***
+                    // This gives the Google Sheets Publishing service a little more time 
+                    // to save the new data before we try to read it.
+                    setTimeout(fetchAndDisplayPosts, 3000); 
 
                 } else {
                     statusMessage.className = 'mt-3 text-sm text-center text-red-600 font-medium';
