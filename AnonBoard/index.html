@@ -3,130 +3,207 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Serverless Social Platform</title>
+    <title>AnonBoard: Serverless Social</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; }
-        #posts-container { margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px; }
-        .post { border: 1px solid #eee; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
-        .post strong { color: #333; }
-        .post small { color: #888; display: block; margin-top: 5px; }
-        form { background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-        input[type="text"], textarea { width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; }
-        button { padding: 10px 15px; background: #007bff; color: white; border: none; cursor: pointer; }
+        body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
-<body>
+<body class="bg-gray-100 min-h-screen">
 
-    <h1>Public Message Board (No Accounts!)</h1>
-    
-    <form id="post-form">
-        <h2>Post a Message</h2>
-        <input type="text" name="Username" placeholder="Your Nickname (Optional)">
-        <textarea name="Message" placeholder="What's on your mind?" required></textarea>
-        <button type="submit">Post Anonymously</button>
-        <p id="form-status"></p>
-    </form>
-    
-    <hr>
+    <div class="max-w-xl mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800">AnonBoard 🤫</h1>
+            <p class="text-gray-500">Post anything you like. No sign-ups, no accounts, just messages.</p>
+        </header>
 
-    <h2>Recent Posts</h2>
-    <div id="posts-container">
-        <p>Loading posts...</p>
+        <!-- Post Submission Form -->
+        <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-700">Write a New Post</h2>
+            <form id="post-form">
+                <!-- The 'name' attributes MUST match your Google Sheet headers: Username, Message -->
+                <input 
+                    type="text" 
+                    name="Username" 
+                    placeholder="Your Nickname (Optional)" 
+                    maxlength="50"
+                    class="w-full p-3 mb-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                <textarea 
+                    name="Message" 
+                    placeholder="What's happening? (Max 280 characters)" 
+                    required 
+                    maxlength="280"
+                    rows="4"
+                    class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                ></textarea>
+                <button 
+                    type="submit" 
+                    id="submit-button"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 shadow-md disabled:opacity-50"
+                >
+                    Publish Post
+                </button>
+                <p id="form-status" class="mt-3 text-sm text-center font-medium"></p>
+            </form>
+        </div>
+        
+        <!-- Posts Display Area -->
+        <h2 class="text-2xl font-semibold mb-4 text-gray-700">Latest Posts</h2>
+        <div id="posts-container" class="space-y-4">
+            <p class="text-center text-gray-500" id="initial-loading">Loading posts...</p>
+        </div>
     </div>
 
     <script>
-        // 🚨 REPLACE THIS WITH YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL 🚨
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyyP5jpp1bxmYJOMvzj0KL8fcyG7sD63QK3Fo87JEaxqitcZbW6-aV-8I59dW5sHfXh/exec'; 
+        // =========================================================================
+        // 🚨 CONFIGURATION: REPLACE THESE PLACEHOLDERS WITH YOUR ACTUAL URLs 🚨
+        // =========================================================================
+        
+        // 1. Google Apps Script Web App URL (for SUBMITTING posts via POST request)
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbytDTSxGc6aZiR-M4qGyfiO2fJYfW-a74ptad_xI8-QFV_FfsJXKnr9ydpCmG50btaS/exec'; 
 
-        // 🚨 REPLACE THIS WITH YOUR GOOGLE SHEET "PUBLISH TO THE WEB" CSV/TSV URL 🚨
-        const DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRNl2vARyFcleNzK6Er2xfQeKhW9fp2YFDTpkUp72VPwkHFRQTgW0_Vblyl7UIRtWnWdIvoVQ7Z0Q_6/pubhtml'; 
+        // 2. Google Sheet "Publish to the web" CSV URL (for READING posts via GET request)
+        const DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQM-MSZOh_sQeV4-OK9a7UFqEBJ4mKAqOsL58EvACx8BsaNQsL3kTRgd82djIwmR4sUyq0dGZo9ymk2/pub?output=csv'; 
+        
+        // =========================================================================
 
         const form = document.getElementById('post-form');
+        const submitButton = document.getElementById('submit-button');
         const statusMessage = document.getElementById('form-status');
         const postsContainer = document.getElementById('posts-container');
         
+        
+        // --- Utility Function to Parse CSV ---
+        function parseCSV(csvText) {
+            const rows = csvText.trim().split('\n');
+            if (rows.length === 0) return [];
+
+            // Simple parser: uses the first row as headers, assumes comma delimiter
+            const headers = rows[0].split(','); 
+            const dataRows = rows.slice(1);
+            const posts = [];
+
+            dataRows.forEach(row => {
+                // Use a simple split, which works fine for clean text data
+                const columns = row.split(','); 
+                
+                if (columns.length >= headers.length) {
+                    const post = {};
+                    headers.forEach((header, index) => {
+                        // Trim whitespace and assign to object key
+                        post[header.trim()] = columns[index].trim(); 
+                    });
+                    
+                    // --- NEW CHECK: ENSURE THE MESSAGE IS NOT EMPTY ---
+                    // This prevents blank rows from the spreadsheet from being displayed.
+                    if (post.Message && post.Message.length > 0) {
+                        posts.push(post);
+                    }
+                    // --------------------------------------------------
+                }
+            });
+            // Return posts in reverse order (newest first)
+            return posts.reverse();
+        }
+
+
         // ===================================
-        // 1. HANDLE FORM SUBMISSION (Writing Data)
+        // 1. FETCH AND DISPLAY POSTS (READING)
+        // ===================================
+        async function fetchAndDisplayPosts() {
+            postsContainer.innerHTML = '';
+            
+            try {
+                // Use the cache-busting parameter to ensure fresh data
+                const cacheBusterUrl = DATA_URL + '&r=' + Date.now();
+                const response = await fetch(cacheBusterUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch: ${response.statusText}`);
+                }
+                
+                const csvText = await response.text();
+                const posts = parseCSV(csvText);
+
+                if (posts.length === 0) {
+                     postsContainer.innerHTML = '<p class="text-center text-gray-500 p-4 border rounded-lg">No posts yet. Be the first to share your message!</p>';
+                     return;
+                }
+
+                posts.forEach(post => {
+                    const postElement = document.createElement('div');
+                    postElement.className = 'post bg-white p-4 rounded-lg shadow-sm border border-gray-200';
+                    
+                    const username = post.Username || 'Anonymous';
+                    const timestamp = post.Timestamp ? new Date(post.Timestamp).toLocaleString() : 'Just now';
+                    const message = post.Message || '---';
+
+                    postElement.innerHTML = `
+                        <div class="flex justify-between items-center mb-2 border-b pb-2">
+                            <strong class="font-bold text-blue-600">${username}</strong>
+                            <span class="text-xs text-gray-400">${timestamp}</span>
+                        </div>
+                        <p class="text-gray-700 whitespace-pre-wrap">${message}</p>
+                    `;
+                    postsContainer.appendChild(postElement);
+                });
+
+            } catch (error) {
+                postsContainer.innerHTML = `
+                    <p class="text-red-500 p-4 border border-red-200 bg-red-50 rounded-lg">
+                        ⚠️ Error loading posts. Please verify your DATA_URL. Error: ${error.message}
+                    </p>
+                `;
+                console.error("Error loading posts:", error);
+            }
+        }
+        
+        // ===================================
+        // 2. HANDLE FORM SUBMISSION (WRITING)
         // ===================================
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            statusMessage.textContent = 'Submitting post...';
+            
+            submitButton.disabled = true;
+            statusMessage.className = 'mt-3 text-sm text-center text-blue-600 font-medium';
+            statusMessage.textContent = 'Submitting post... Please wait a moment.';
             
             const formData = new FormData(form);
             
             try {
-                // Send the form data to the Google Apps Script endpoint
+                // Send the form data to the Google Apps Script endpoint (the SCRIPT_URL)
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    body: formData // The script expects FormData
+                    body: formData 
                 });
 
                 const data = await response.json();
 
                 if (data.result === 'success') {
-                    statusMessage.textContent = '✅ Post submitted successfully! Refresh the page to see it.';
+                    statusMessage.className = 'mt-3 text-sm text-center text-green-600 font-medium';
+                    statusMessage.textContent = '✅ Post published! Refreshing posts...';
                     form.reset();
+                    
+                    // Immediately re-fetch and display posts
+                    setTimeout(fetchAndDisplayPosts, 1000); 
+
                 } else {
-                    statusMessage.textContent = '❌ Error submitting post: ' + data.error;
+                    statusMessage.className = 'mt-3 text-sm text-center text-red-600 font-medium';
+                    statusMessage.textContent = '❌ Submission Error: ' + (data.error || 'Check console for details.');
                 }
             } catch (error) {
-                statusMessage.textContent = '❌ Network or Submission Error: ' + error.message;
+                statusMessage.className = 'mt-3 text-sm text-center text-red-600 font-medium';
+                statusMessage.textContent = '❌ Network Error. Is the SCRIPT_URL correct?';
+                console.error("Submission fetch failed:", error);
+            } finally {
+                submitButton.disabled = false;
             }
         });
         
-        // ===================================
-        // 2. FETCH AND DISPLAY POSTS (Reading Data)
-        // ===================================
-        async function fetchAndDisplayPosts() {
-            postsContainer.innerHTML = 'Loading posts...';
-
-            try {
-                // Fetch the published data (e.g., as a CSV or TSV file)
-                const response = await fetch(DATA_URL);
-                const csvText = await response.text();
-
-                // Simple parser: Split into rows by newline, then split by comma/tab for columns
-                // For this example, we'll assume a simple comma-separated structure (CSV)
-                // You might need a more robust CSV/TSV parser for production
-                const rows = csvText.trim().split('\n');
-                
-                // The first row is the header
-                const headers = rows[0].split(','); 
-                const dataRows = rows.slice(1);
-                
-                postsContainer.innerHTML = ''; // Clear "Loading..."
-                
-                // Loop through posts in reverse (newest first)
-                for (let i = dataRows.length - 1; i >= 0; i--) {
-                    const columns = dataRows[i].split(',');
-                    
-                    // Map columns to their respective headers (adjust indices if needed)
-                    // Assumes: [0]=Timestamp, [1]=Username, [2]=Message
-                    const timestamp = columns[0] || 'Unknown Time';
-                    const username = columns[1] || 'Anonymous';
-                    const message = columns[2] || 'No content';
-                    
-                    const postElement = document.createElement('div');
-                    postElement.className = 'post';
-                    postElement.innerHTML = `
-                        <strong>${username}</strong>
-                        <p>${message}</p>
-                        <small>Posted: ${new Date(timestamp).toLocaleString()}</small>
-                    `;
-                    postsContainer.appendChild(postElement);
-                }
-
-                if (dataRows.length === 0) {
-                     postsContainer.innerHTML = '<p>No posts yet. Be the first!</p>';
-                }
-
-            } catch (error) {
-                postsContainer.innerHTML = `<p style="color: red;">Error loading posts. Check the DATA_URL and ensure your sheet is published. Error: ${error.message}</p>`;
-            }
-        }
-        
-        // Initial load
-        fetchAndDisplayPosts();
+        // Initial call to load posts when the page loads
+        document.addEventListener('DOMContentLoaded', fetchAndDisplayPosts);
     </script>
 </body>
 </html>
