@@ -74,6 +74,17 @@
         const statusMessage = document.getElementById('form-status');
         const postsContainer = document.getElementById('posts-container');
         
+        // --- NEW SANITIZATION FUNCTION ---
+        function sanitizeInput(str) {
+            if (!str) return '';
+            // Replaces HTML special characters with their entity equivalents
+            return str.replace(/&/g, '&amp;')
+                      .replace(/</g, '&lt;')
+                      .replace(/>/g, '&gt;')
+                      .replace(/"/g, '&quot;')
+                      .replace(/'/g, '&#039;');
+        }
+        // ---------------------------------
         
         // --- Utility Function to Parse CSV ---
         function parseCSV(csvText) {
@@ -181,13 +192,23 @@
             statusMessage.className = 'mt-3 text-sm text-center text-blue-600 font-medium';
             statusMessage.textContent = 'Submitting post... Please wait a moment.';
             
-            const formData = new FormData(form);
+            // --- NEW: Sanitize data before creating the FormData object ---
+            const sanitizedFormData = new FormData();
+            
+            // 1. Get raw inputs
+            const rawUsername = form.querySelector('[name="Username"]').value;
+            const rawMessage = form.querySelector('[name="Message"]').value;
+            
+            // 2. Sanitize and append
+            sanitizedFormData.append('Username', sanitizeInput(rawUsername));
+            sanitizedFormData.append('Message', sanitizeInput(rawMessage));
+            // -------------------------------------------------------------
             
             try {
-                // Send the form data to the Google Apps Script endpoint (the SCRIPT_URL)
+                // Send the sanitized form data to the Google Apps Script endpoint (the SCRIPT_URL)
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    body: formData 
+                    body: sanitizedFormData // Use the sanitized data here
                 });
 
                 const data = await response.json();
@@ -198,9 +219,7 @@
                     statusMessage.textContent = '✅ Post published! Waiting for Google Sheets update...'; 
                     form.reset();
                     
-                    // *** CHANGED: Increased delay to 3 seconds (3000ms) ***
-                    // This gives the Google Sheets Publishing service a little more time 
-                    // to save the new data before we try to read it.
+                    // Increased delay to 3 seconds (3000ms)
                     setTimeout(fetchAndDisplayPosts, 3000); 
 
                 } else {
