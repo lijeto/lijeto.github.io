@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Anonymous Wall</title>
+</head>
+<body>
+  <h1>Anonymous Message Board</h1>
+  <textarea id="message" placeholder="Write something..." rows="5" cols="40"></textarea><br><br>
+  <button onclick="submitPost()">Post</button>
+  <p id="response"></p>
+
+  <script>
+    function submitPost() {
+      const message = document.getElementById("message").value.trim();
+      if (!message) {
+        alert("Please enter a message!");
+        return;
+      }
+
+      fetch("https://script.google.com/macros/s/AKfycbx1Nl5jkl1L3YY0UflCepq1U6wC48-iH9IQuJE_gOapdMC5ZreqvvhW4w1isR2HZi1u/exec", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ message })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("response").innerText = "Message posted!";
+        document.getElementById("message").value = "";
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById("response").innerText = "Error posting message.";
+      });
+    }
+  </script>
+</body>
+</html>
