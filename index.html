@@ -67,6 +67,9 @@
         // 2. Google Sheet "Publish to the web" CSV URL (for READING posts via GET request)
         const DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQM-MSZOh_sQeV4-OK9a7UFqEBJ4mKAqOsL58EvACx8BsaNQsL3kTRgd82djIwmR4sUyq0dGZo9ymk2/pub?output=csv'; 
         
+        // 3. NEW: Automatic refresh interval (10 seconds)
+        const REFRESH_INTERVAL_MS = 10000;
+        
         // =========================================================================
 
         const form = document.getElementById('post-form');
@@ -122,7 +125,13 @@
         // 1. FETCH AND DISPLAY POSTS (READING)
         // ===================================
         async function fetchAndDisplayPosts() {
-            postsContainer.innerHTML = '';
+            // Check if the posts container is currently empty before clearing, to avoid visual flicker if no changes are made
+            const wasEmpty = postsContainer.innerHTML === '';
+            if (!wasEmpty) {
+                // Optionally show a small loading indicator here instead of clearing the whole thing
+                // For simplicity, we'll clear it for now to ensure a fresh display
+            }
+            postsContainer.innerHTML = ''; // Clear existing posts
             
             try {
                 // Use the cache-busting parameter to ensure fresh data
@@ -192,7 +201,7 @@
             statusMessage.className = 'mt-3 text-sm text-center text-blue-600 font-medium';
             statusMessage.textContent = 'Submitting post... Please wait a moment.';
             
-            // --- NEW: Sanitize data before creating the FormData object ---
+            // --- Sanitize data before creating the FormData object ---
             const sanitizedFormData = new FormData();
             
             // 1. Get raw inputs
@@ -219,7 +228,7 @@
                     statusMessage.textContent = '✅ Post published! Waiting for Google Sheets update...'; 
                     form.reset();
                     
-                    // Increased delay to 3 seconds (3000ms)
+                    // Call fetch after a 3 second delay to give the sheet time to update
                     setTimeout(fetchAndDisplayPosts, 3000); 
 
                 } else {
@@ -237,6 +246,9 @@
         
         // Initial call to load posts when the page loads
         document.addEventListener('DOMContentLoaded', fetchAndDisplayPosts);
+
+        // --- NEW: Set up the automatic refresh every 10 seconds ---
+        setInterval(fetchAndDisplayPosts, REFRESH_INTERVAL_MS);
     </script>
 </body>
 </html>
